@@ -3,12 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ここ行きたい</title>
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  >
+  <title>ここ行きたい</title>
 
   <style>
     * {
@@ -17,105 +13,132 @@
 
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      background: #f5f5f5;
+      background: #f6f6f6;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
       color: #222;
     }
 
     .container {
-      max-width: 680px;
+      max-width: 650px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 22px 16px 50px;
     }
 
     h1 {
-      margin-bottom: 5px;
+      margin: 10px 0 4px;
+      font-size: 30px;
     }
 
-    .sub {
+    .subtitle {
+      margin: 0 0 24px;
       color: #777;
-      margin-top: 0;
-      margin-bottom: 25px;
+      font-size: 15px;
     }
 
     .card {
-      background: white;
+      background: #fff;
+      border-radius: 18px;
       padding: 18px;
-      border-radius: 16px;
       margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
     }
 
-    textarea,
-    input {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      font-size: 16px;
+    .label {
+      font-weight: 700;
       margin-bottom: 10px;
     }
 
-    textarea {
-      min-height: 170px;
-      resize: vertical;
+    input {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #999;
     }
 
     button {
       width: 100%;
-      padding: 14px;
       border: none;
       border-radius: 12px;
+      padding: 15px;
+      margin-top: 10px;
       font-size: 16px;
-      font-weight: bold;
+      font-weight: 700;
       cursor: pointer;
-      margin-top: 5px;
     }
 
     .primary {
-      background: #222;
-      color: white;
+      background: #111;
+      color: #fff;
     }
 
     .secondary {
-      background: #eee;
+      background: #eeeeee;
       color: #222;
     }
 
-    #map {
-      height: 320px;
-      border-radius: 14px;
-      margin-top: 12px;
+    #status {
+      margin-top: 14px;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
-    .place {
+    .platform {
+      font-weight: 700;
+    }
+
+    #map {
+      width: 100%;
+      height: 360px;
+      border-radius: 14px;
+      background: #eee;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #888;
+      margin-top: 9px;
+    }
+
+    .saved-item {
       padding: 14px 0;
       border-bottom: 1px solid #eee;
     }
 
-    .place:last-child {
+    .saved-item:last-child {
       border-bottom: none;
     }
 
-    .place-name {
-      font-weight: bold;
-      font-size: 17px;
+    .saved-title {
+      font-weight: 700;
+      margin-bottom: 5px;
     }
 
-    .place-address {
-      color: #666;
-      font-size: 14px;
-      margin-top: 4px;
+    .saved-url {
+      color: #777;
+      font-size: 12px;
+      overflow-wrap: anywhere;
     }
 
-    .delete {
+    .remove {
+      padding: 8px 10px;
+      font-size: 13px;
       margin-top: 8px;
       background: #eee;
-      font-size: 13px;
-      padding: 8px;
     }
 
-    #message {
-      margin-top: 10px;
+    .empty {
+      color: #999;
       font-size: 14px;
     }
   </style>
@@ -123,321 +146,291 @@
 
 <body>
 
-<div class="container">
+  <div class="container">
 
-  <h1>ここ行きたい</h1>
-  <p class="sub">SNSで見つけた場所を忘れない。</p>
+    <h1>ここ行きたい</h1>
 
-  <div class="card">
+    <p class="subtitle">
+      SNSで見つけた場所を、忘れない。
+    </p>
 
-    <strong>① キャプションを貼り付け</strong>
 
-    <textarea
-      id="caption"
-      placeholder="InstagramやTikTokのキャプションをここに貼り付け"
-    ></textarea>
+    <div class="card">
 
-    <button class="primary" onclick="findAddress()">
-      住所を見つける
-    </button>
+      <div class="label">
+        投稿URL
+      </div>
 
-    <div id="message"></div>
+      <input
+        id="postUrl"
+        type="url"
+        placeholder="Instagram / TikTok のURLを貼り付け"
+      >
+
+      <button
+        class="primary"
+        onclick="analyzeUrl()"
+      >
+        場所を探す
+      </button>
+
+      <div id="status"></div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="label">
+        MAP
+      </div>
+
+      <div id="map"></div>
+
+      <div class="small">
+        現在はGoogle Maps表示の動作確認段階です。
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="label">
+        保存した投稿
+      </div>
+
+      <div id="savedList"></div>
+
+    </div>
 
   </div>
 
-  <div class="card">
-
-    <strong>② 場所を確認</strong>
-
-    <input
-      id="name"
-      placeholder="店名・場所名"
-    >
-
-    <input
-      id="address"
-      placeholder="住所"
-    >
-
-    <button class="secondary" onclick="searchPlace()">
-      地図で確認
-    </button>
-
-    <div id="map"></div>
-
-    <button class="primary" onclick="savePlace()">
-      ここ行きたいに保存
-    </button>
-
-  </div>
-
-  <div class="card">
-
-    <strong>保存した場所</strong>
-
-    <div id="places"></div>
-
-  </div>
-
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-let map = L.map('map').setView([34.3853, 132.4553], 12);
-
-L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {
-    attribution: '&copy; OpenStreetMap'
-  }
-).addTo(map);
-
-let marker = null;
-let currentLat = null;
-let currentLng = null;
+let map;
 
 
-/* ===============================
-   キャプションから住所候補を探す
-================================ */
+/* ==============================
+   Google Maps
+============================== */
 
-function findAddress() {
+function initMap() {
 
-  const caption = document.getElementById("caption").value;
+  const hiroshima = {
+    lat: 34.3853,
+    lng: 132.4553
+  };
 
-  if (!caption.trim()) {
-    showMessage("キャプションを貼り付けてください。");
-    return;
-  }
-
-  const lines = caption
-    .split("\n")
-    .map(line => line.trim())
-    .filter(line => line);
-
-  let address = "";
-
-  /* 📍・住所・所在地が付いている行を優先 */
-
-  for (const line of lines) {
-
-    if (
-      line.includes("📍") ||
-      line.startsWith("住所") ||
-      line.startsWith("所在地")
-    ) {
-
-      const cleaned = line
-        .replace("📍", "")
-        .replace(/^住所[:：]?\s*/, "")
-        .replace(/^所在地[:：]?\s*/, "")
-        .trim();
-
-      if (cleaned.length > 5) {
-        address = cleaned;
-        break;
-      }
-
+  map = new google.maps.Map(
+    document.getElementById("map"),
+    {
+      center: hiroshima,
+      zoom: 12,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false
     }
-
-  }
-
-  /* 都道府県を含む行を探す */
-
-  if (!address) {
-
-    const prefectures =
-      /(北海道|東京都|京都府|大阪府|.{2,3}県)/;
-
-    for (const line of lines) {
-
-      if (prefectures.test(line)) {
-        address = line;
-        break;
-      }
-
-    }
-
-  }
-
-  if (address) {
-
-    document.getElementById("address").value = address;
-
-    showMessage(
-      "住所候補を見つけました。地図で確認してください。"
-    );
-
-  } else {
-
-    showMessage(
-      "住所を自動で見つけられませんでした。住所を入力してください。"
-    );
-
-  }
-
-}
-
-
-/* ===============================
-   地図検索
-================================ */
-
-async function searchPlace() {
-
-  const address =
-    document.getElementById("address").value.trim();
-
-  if (!address) {
-    alert("住所を入力してください");
-    return;
-  }
-
-  const url =
-    "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
-    encodeURIComponent(address);
-
-  try {
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (!data.length) {
-      alert("場所が見つかりませんでした");
-      return;
-    }
-
-    currentLat = parseFloat(data[0].lat);
-    currentLng = parseFloat(data[0].lon);
-
-    map.setView(
-      [currentLat, currentLng],
-      16
-    );
-
-    if (marker) {
-      map.removeLayer(marker);
-    }
-
-    marker = L.marker(
-      [currentLat, currentLng]
-    ).addTo(map);
-
-  } catch (error) {
-
-    alert("地図検索でエラーが発生しました");
-
-  }
-
-}
-
-
-/* ===============================
-   保存
-================================ */
-
-function savePlace() {
-
-  const name =
-    document.getElementById("name").value.trim();
-
-  const address =
-    document.getElementById("address").value.trim();
-
-  if (!address) {
-    alert("住所がありません");
-    return;
-  }
-
-  if (currentLat === null) {
-    alert("先に「地図で確認」を押してください");
-    return;
-  }
-
-  const places =
-    JSON.parse(
-      localStorage.getItem("kokoIkitai") || "[]"
-    );
-
-  places.push({
-    id: Date.now(),
-    name: name || "名前未設定",
-    address,
-    lat: currentLat,
-    lng: currentLng
-  });
-
-  localStorage.setItem(
-    "kokoIkitai",
-    JSON.stringify(places)
   );
 
-  displayPlaces();
+}
 
-  alert("保存しました");
+
+/* ==============================
+   URL解析
+============================== */
+
+function analyzeUrl() {
+
+  const input =
+    document.getElementById("postUrl");
+
+  const url =
+    input.value.trim();
+
+  const status =
+    document.getElementById("status");
+
+
+  if (!url) {
+
+    status.innerHTML =
+      "投稿URLを貼り付けてください。";
+
+    return;
+  }
+
+
+  let platform = "";
+
+
+  if (
+    url.includes("instagram.com")
+  ) {
+
+    platform = "Instagram";
+
+  }
+
+  else if (
+    url.includes("tiktok.com")
+  ) {
+
+    platform = "TikTok";
+
+  }
+
+  else {
+
+    status.innerHTML =
+      "Instagram または TikTok のURLを貼り付けてください。";
+
+    return;
+
+  }
+
+
+  status.innerHTML = `
+    <span class="platform">
+      ${platform}
+    </span>
+    の投稿を確認しました。<br>
+    投稿URLを保存しました。
+  `;
+
+
+  savePost(
+    url,
+    platform
+  );
 
 }
 
 
-/* ===============================
-   一覧表示
-================================ */
+/* ==============================
+   投稿保存
+============================== */
 
-function displayPlaces() {
+function savePost(
+  url,
+  platform
+) {
 
-  const places =
+  const saved =
     JSON.parse(
-      localStorage.getItem("kokoIkitai") || "[]"
+      localStorage.getItem(
+        "kokoIkitaiPosts"
+      ) || "[]"
     );
 
-  const area =
-    document.getElementById("places");
 
-  if (!places.length) {
+  const exists =
+    saved.some(
+      item => item.url === url
+    );
+
+
+  if (!exists) {
+
+    saved.push({
+
+      id: Date.now(),
+
+      url: url,
+
+      platform: platform,
+
+      createdAt:
+        new Date().toISOString()
+
+    });
+
+
+    localStorage.setItem(
+      "kokoIkitaiPosts",
+      JSON.stringify(saved)
+    );
+
+  }
+
+
+  displaySavedPosts();
+
+}
+
+
+/* ==============================
+   保存一覧
+============================== */
+
+function displaySavedPosts() {
+
+  const area =
+    document.getElementById(
+      "savedList"
+    );
+
+
+  const saved =
+    JSON.parse(
+      localStorage.getItem(
+        "kokoIkitaiPosts"
+      ) || "[]"
+    );
+
+
+  if (!saved.length) {
 
     area.innerHTML =
-      "<p style='color:#888;'>まだ保存されていません。</p>";
+      '<div class="empty">まだ保存されていません。</div>';
 
     return;
+
   }
+
 
   area.innerHTML = "";
 
-  places
+
+  saved
     .slice()
     .reverse()
-    .forEach(place => {
+    .forEach(item => {
 
       const div =
         document.createElement("div");
 
-      div.className = "place";
+      div.className =
+        "saved-item";
+
 
       div.innerHTML = `
-        <div class="place-name">
-          ${escapeHtml(place.name)}
+
+        <div class="saved-title">
+          ${escapeHtml(item.platform)}
         </div>
 
-        <div class="place-address">
-          ${escapeHtml(place.address)}
+        <div class="saved-url">
+          ${escapeHtml(item.url)}
         </div>
 
         <button
           class="secondary"
-          onclick="showPlace(${place.lat}, ${place.lng})"
+          onclick="openPost('${encodeURIComponent(item.url)}')"
         >
-          地図で見る
+          元の投稿を見る
         </button>
 
         <button
-          class="delete"
-          onclick="deletePlace(${place.id})"
+          class="remove"
+          onclick="removePost(${item.id})"
         >
           削除
         </button>
+
       `;
+
 
       area.appendChild(div);
 
@@ -446,78 +439,94 @@ function displayPlaces() {
 }
 
 
-/* ===============================
-   保存場所を見る
-================================ */
+/* ==============================
+   投稿を開く
+============================== */
 
-function showPlace(lat, lng) {
+function openPost(
+  encodedUrl
+) {
 
-  map.setView(
-    [lat, lng],
-    16
+  const url =
+    decodeURIComponent(
+      encodedUrl
+    );
+
+  window.open(
+    url,
+    "_blank"
   );
-
-  if (marker) {
-    map.removeLayer(marker);
-  }
-
-  marker =
-    L.marker([lat, lng]).addTo(map);
-
-  window.scrollTo({
-    top: document.getElementById("map").offsetTop - 100,
-    behavior: "smooth"
-  });
 
 }
 
 
-/* ===============================
+/* ==============================
    削除
-================================ */
+============================== */
 
-function deletePlace(id) {
+function removePost(
+  id
+) {
 
-  let places =
+  let saved =
     JSON.parse(
-      localStorage.getItem("kokoIkitai") || "[]"
+      localStorage.getItem(
+        "kokoIkitaiPosts"
+      ) || "[]"
     );
 
-  places =
-    places.filter(
-      place => place.id !== id
+
+  saved =
+    saved.filter(
+      item => item.id !== id
     );
+
 
   localStorage.setItem(
-    "kokoIkitai",
-    JSON.stringify(places)
+    "kokoIkitaiPosts",
+    JSON.stringify(saved)
   );
 
-  displayPlaces();
+
+  displaySavedPosts();
 
 }
 
 
-function showMessage(text) {
-  document.getElementById("message").textContent = text;
-}
+/* ==============================
+   HTML安全化
+============================== */
 
-
-function escapeHtml(text) {
+function escapeHtml(
+  value
+) {
 
   const div =
     document.createElement("div");
 
-  div.textContent = text;
+  div.textContent =
+    value;
 
   return div.innerHTML;
 
 }
 
 
-displayPlaces();
+displaySavedPosts();
 
 </script>
+
+
+<!--
+ここだけ自分のデモキーに変更してください
+YOUR_GOOGLE_MAPS_API_KEY
+-->
+
+<script
+  async
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCCzKLlzea6Xz5oAmykiCrdqf53H4iGL5A&callback=initMap">
+</script>
+
 
 </body>
 </html>
