@@ -1,1 +1,523 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ここ行きたい</title>
 
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    .sub {
+      color: #777;
+      margin-top: 0;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: white;
+      padding: 18px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+    }
+
+    textarea,
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .primary {
+      background: #222;
+      color: white;
+    }
+
+    .secondary {
+      background: #eee;
+      color: #222;
+    }
+
+    #map {
+      height: 320px;
+      border-radius: 14px;
+      margin-top: 12px;
+    }
+
+    .place {
+      padding: 14px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .place:last-child {
+      border-bottom: none;
+    }
+
+    .place-name {
+      font-weight: bold;
+      font-size: 17px;
+    }
+
+    .place-address {
+      color: #666;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .delete {
+      margin-top: 8px;
+      background: #eee;
+      font-size: 13px;
+      padding: 8px;
+    }
+
+    #message {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>ここ行きたい</h1>
+  <p class="sub">SNSで見つけた場所を忘れない。</p>
+
+  <div class="card">
+
+    <strong>① キャプションを貼り付け</strong>
+
+    <textarea
+      id="caption"
+      placeholder="InstagramやTikTokのキャプションをここに貼り付け"
+    ></textarea>
+
+    <button class="primary" onclick="findAddress()">
+      住所を見つける
+    </button>
+
+    <div id="message"></div>
+
+  </div>
+
+  <div class="card">
+
+    <strong>② 場所を確認</strong>
+
+    <input
+      id="name"
+      placeholder="店名・場所名"
+    >
+
+    <input
+      id="address"
+      placeholder="住所"
+    >
+
+    <button class="secondary" onclick="searchPlace()">
+      地図で確認
+    </button>
+
+    <div id="map"></div>
+
+    <button class="primary" onclick="savePlace()">
+      ここ行きたいに保存
+    </button>
+
+  </div>
+
+  <div class="card">
+
+    <strong>保存した場所</strong>
+
+    <div id="places"></div>
+
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+let map = L.map('map').setView([34.3853, 132.4553], 12);
+
+L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    attribution: '&copy; OpenStreetMap'
+  }
+).addTo(map);
+
+let marker = null;
+let currentLat = null;
+let currentLng = null;
+
+
+/* ===============================
+   キャプションから住所候補を探す
+================================ */
+
+function findAddress() {
+
+  const caption = document.getElementById("caption").value;
+
+  if (!caption.trim()) {
+    showMessage("キャプションを貼り付けてください。");
+    return;
+  }
+
+  const lines = caption
+    .split("\n")
+    .map(line => line.trim())
+    .filter(line => line);
+
+  let address = "";
+
+  /* 📍・住所・所在地が付いている行を優先 */
+
+  for (const line of lines) {
+
+    if (
+      line.includes("📍") ||
+      line.startsWith("住所") ||
+      line.startsWith("所在地")
+    ) {
+
+      const cleaned = line
+        .replace("📍", "")
+        .replace(/^住所[:：]?\s*/, "")
+        .replace(/^所在地[:：]?\s*/, "")
+        .trim();
+
+      if (cleaned.length > 5) {
+        address = cleaned;
+        break;
+      }
+
+    }
+
+  }
+
+  /* 都道府県を含む行を探す */
+
+  if (!address) {
+
+    const prefectures =
+      /(北海道|東京都|京都府|大阪府|.{2,3}県)/;
+
+    for (const line of lines) {
+
+      if (prefectures.test(line)) {
+        address = line;
+        break;
+      }
+
+    }
+
+  }
+
+  if (address) {
+
+    document.getElementById("address").value = address;
+
+    showMessage(
+      "住所候補を見つけました。地図で確認してください。"
+    );
+
+  } else {
+
+    showMessage(
+      "住所を自動で見つけられませんでした。住所を入力してください。"
+    );
+
+  }
+
+}
+
+
+/* ===============================
+   地図検索
+================================ */
+
+async function searchPlace() {
+
+  const address =
+    document.getElementById("address").value.trim();
+
+  if (!address) {
+    alert("住所を入力してください");
+    return;
+  }
+
+  const url =
+    "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
+    encodeURIComponent(address);
+
+  try {
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.length) {
+      alert("場所が見つかりませんでした");
+      return;
+    }
+
+    currentLat = parseFloat(data[0].lat);
+    currentLng = parseFloat(data[0].lon);
+
+    map.setView(
+      [currentLat, currentLng],
+      16
+    );
+
+    if (marker) {
+      map.removeLayer(marker);
+    }
+
+    marker = L.marker(
+      [currentLat, currentLng]
+    ).addTo(map);
+
+  } catch (error) {
+
+    alert("地図検索でエラーが発生しました");
+
+  }
+
+}
+
+
+/* ===============================
+   保存
+================================ */
+
+function savePlace() {
+
+  const name =
+    document.getElementById("name").value.trim();
+
+  const address =
+    document.getElementById("address").value.trim();
+
+  if (!address) {
+    alert("住所がありません");
+    return;
+  }
+
+  if (currentLat === null) {
+    alert("先に「地図で確認」を押してください");
+    return;
+  }
+
+  const places =
+    JSON.parse(
+      localStorage.getItem("kokoIkitai") || "[]"
+    );
+
+  places.push({
+    id: Date.now(),
+    name: name || "名前未設定",
+    address,
+    lat: currentLat,
+    lng: currentLng
+  });
+
+  localStorage.setItem(
+    "kokoIkitai",
+    JSON.stringify(places)
+  );
+
+  displayPlaces();
+
+  alert("保存しました");
+
+}
+
+
+/* ===============================
+   一覧表示
+================================ */
+
+function displayPlaces() {
+
+  const places =
+    JSON.parse(
+      localStorage.getItem("kokoIkitai") || "[]"
+    );
+
+  const area =
+    document.getElementById("places");
+
+  if (!places.length) {
+
+    area.innerHTML =
+      "<p style='color:#888;'>まだ保存されていません。</p>";
+
+    return;
+  }
+
+  area.innerHTML = "";
+
+  places
+    .slice()
+    .reverse()
+    .forEach(place => {
+
+      const div =
+        document.createElement("div");
+
+      div.className = "place";
+
+      div.innerHTML = `
+        <div class="place-name">
+          ${escapeHtml(place.name)}
+        </div>
+
+        <div class="place-address">
+          ${escapeHtml(place.address)}
+        </div>
+
+        <button
+          class="secondary"
+          onclick="showPlace(${place.lat}, ${place.lng})"
+        >
+          地図で見る
+        </button>
+
+        <button
+          class="delete"
+          onclick="deletePlace(${place.id})"
+        >
+          削除
+        </button>
+      `;
+
+      area.appendChild(div);
+
+    });
+
+}
+
+
+/* ===============================
+   保存場所を見る
+================================ */
+
+function showPlace(lat, lng) {
+
+  map.setView(
+    [lat, lng],
+    16
+  );
+
+  if (marker) {
+    map.removeLayer(marker);
+  }
+
+  marker =
+    L.marker([lat, lng]).addTo(map);
+
+  window.scrollTo({
+    top: document.getElementById("map").offsetTop - 100,
+    behavior: "smooth"
+  });
+
+}
+
+
+/* ===============================
+   削除
+================================ */
+
+function deletePlace(id) {
+
+  let places =
+    JSON.parse(
+      localStorage.getItem("kokoIkitai") || "[]"
+    );
+
+  places =
+    places.filter(
+      place => place.id !== id
+    );
+
+  localStorage.setItem(
+    "kokoIkitai",
+    JSON.stringify(places)
+  );
+
+  displayPlaces();
+
+}
+
+
+function showMessage(text) {
+  document.getElementById("message").textContent = text;
+}
+
+
+function escapeHtml(text) {
+
+  const div =
+    document.createElement("div");
+
+  div.textContent = text;
+
+  return div.innerHTML;
+
+}
+
+
+displayPlaces();
+
+</script>
+
+</body>
+</html>
